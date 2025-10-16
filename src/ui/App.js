@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 import MessageList from "./MessageList.js";
 import Input from "./Input.js";
+import { useScreenSize } from "../hooks/useScreenSize.js";
 
 export default function App({ sendMessage, roomName, handlers }) {
   const [messages, setMessages] = useState([]);
@@ -10,17 +11,17 @@ export default function App({ sendMessage, roomName, handlers }) {
     () => `user-${Math.random().toString(36).slice(2, 6)}`,
   );
 
+  const size = useScreenSize()
+
+  console.log("SIZE", size)
+
   // Register handlers ONCE on mount
   useEffect(() => {
-    console.log("📝 Registering handlers");
-
     handlers.message = (message) => {
-      console.log("App received message:", message);
       setMessages((prev) => [...prev, message]);
     };
 
     handlers.peer = (count) => {
-      console.log("Peer count:", count);
       setPeerCount(count);
     };
 
@@ -37,21 +38,20 @@ export default function App({ sendMessage, roomName, handlers }) {
   };
 
   return (
-    <Box flexDirection="column" height="100%" width="100%">
-      <Box borderStyle="round" borderColor="cyan" paddingX={1}>
-        <Text color="cyan">
-          Room: {roomName} | Peers: {peerCount} | You: {username}
+    <Box flexDirection="column" borderStyle="round" borderColor="green" padding={1} height={size.height} width={size.width}>
+      <Box gap={1}>
+        <Text>{">"}</Text>
+        <Text inverse color="green">{" "}{username}{" "}</Text>
+        <Text>Room:</Text>
+        <Text color="green" inverse>
+          {" "}{roomName}{" "}
         </Text>
+        <Text> Peers: {peerCount}</Text>
       </Box>
-      <Box flexGrow={1} flexDirection="column" paddingX={1} paddingY={1}>
-        {peerCount === 0 && (
-          <Box marginBottom={1}>
-            <Text color="yellow">⏳ Waiting for peers to connect...</Text>
-          </Box>
-        )}
+      <Box flexGrow={1} paddingTop={1} flexDirection="column">
         <MessageList messages={messages} />
       </Box>
-      <Box borderStyle="single" borderColor="gray" paddingX={1}>
+      <Box borderStyle="single" borderTop={false} borderLeft={false} borderRight={false} borderColor="green">
         <Input onSubmit={handleSend} />
       </Box>
     </Box>

@@ -2,12 +2,19 @@ import Hyperswarm from "hyperswarm";
 import crypto from "crypto";
 import b4a from "b4a";
 
+const LOGS = false
+
+const log = (string) => {
+  if (!LOGS) return
+  console.log(string)
+}
+
 export async function initSwarm(roomName, messageHandler, peerHandler) {
   const swarm = new Hyperswarm();
   const topic = crypto.createHash("sha256").update(roomName).digest();
 
-  console.log("🔑 Topic hash:", b4a.toString(topic, "hex"));
-  console.log("📍 Room name:", roomName);
+  log("🔑 Topic hash:", b4a.toString(topic, "hex"));
+  log("📍 Room name:", roomName);
 
   const peers = new Map();
   const messageQueue = [];
@@ -15,16 +22,16 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
 
   swarm.on("connection", (conn, info) => {
     const peerId = b4a.toString(info.publicKey, "hex").slice(0, 8);
-    console.log("\n🎉 NEW PEER CONNECTED:", peerId);
-    console.log("   Initiator:", info.client ? "Yes (client)" : "No (server)");
+    log("\n🎉 NEW PEER CONNECTED:", peerId);
+    log("   Initiator:", info.client ? "Yes (client)" : "No (server)");
 
     peers.set(peerId, conn);
-    console.log("   Total peers:", peers.size);
+    log("   Total peers:", peers.size);
 
     // Mark as ready and flush queue
     if (!isReady && peers.size > 0) {
       isReady = true;
-      console.log("✅ First peer connected! Flushing message queue...");
+      log("✅ First peer connected! Flushing message queue...");
 
       // Send any queued messages
       messageQueue.forEach(({ text, username }) => {
@@ -48,7 +55,7 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
     conn.on("data", (data) => {
       try {
         const message = JSON.parse(data.toString());
-        console.log(
+        log(
           "📨 Received from",
           peerId + ":",
           message.type || "message",
@@ -56,7 +63,7 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
 
         // Handle handshake separately
         if (message.type === "handshake") {
-          console.log("🤝 Handshake received from", peerId);
+          log("🤝 Handshake received from", peerId);
           return;
         }
 
@@ -73,11 +80,11 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
     });
 
     conn.on("close", () => {
-      console.log("👋 Peer disconnected:", peerId);
+      log("👋 Peer disconnected:", peerId);
       peers.delete(peerId);
       if (peers.size === 0) {
         isReady = false;
-        console.log("⚠️  No peers connected");
+        log("⚠️  No peers connected");
       }
       if (peerHandler) {
         peerHandler(peers.size);
@@ -91,7 +98,7 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
   });
 
   // Important: Join as both client and server for bidirectional discovery
-  console.log("🔍 Starting discovery...");
+  log("🔍 Starting discovery...");
   const discovery = swarm.join(topic, {
     client: true,
     server: true,
@@ -102,17 +109,17 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
 
   // Wait for the discovery to be fully flushed
   await discovery.flushed();
-  console.log("✅ Discovery flushed - actively looking for peers");
+  log("✅ Discovery flushed - actively looking for peers");
 
   // Log discovery events for debugging
   swarm.on("update", () => {
-    console.log("🔄 Discovery update event");
+    log("🔄 Discovery update event");
   });
 
   // Add periodic status check for debugging
   const statusInterval = setInterval(() => {
     if (peers.size === 0) {
-      console.log(
+      log(
         "⏳ Still waiting for peers... (ensure both clients use same room name)",
       );
     }
@@ -133,7 +140,7 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
         try {
           conn.write(data);
           sentCount++;
-          console.log("✉️  Sent to peer:", peerId);
+          log("✉️  Sent to peer:", peerId);
         } catch (err) {
           console.error("❌ Send failed to", peerId + ":", err.message);
         }
@@ -142,15 +149,15 @@ export async function initSwarm(roomName, messageHandler, peerHandler) {
       }
     }
 
-    console.log(`📤 Message sent to ${sentCount}/${peers.size} peers`);
+    log(`📤 Message sent to ${sentCount}/${peers.size} peers`);
   }
 
   function sendMessage(text, username) {
-    console.log("\n📤 Sending message:", text);
-    console.log("   Current peers:", peers.size);
+    log("\n📤 Sending message:", text);
+    log("   Current peers:", peers.size);
 
     if (!isReady || peers.size === 0) {
-      console.log("⏳ No peers connected, queueing message");
+      log("⏳ No peers connected, queueing message");
       messageQueue.push({ text, username });
 
       // Show message locally anyway

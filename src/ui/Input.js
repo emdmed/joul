@@ -17,9 +17,9 @@ export default function Input({ onSubmit }) {
 
   return (
     <Box>
-      <Text color="yellow">&gt; </Text>
+      <Text color="green">&gt; </Text>
       <Text>{input}</Text>
-      <Text color="gray">█</Text>
+      <Text color="green">█</Text>
     </Box>
   );
 }

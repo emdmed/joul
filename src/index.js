@@ -13,7 +13,6 @@ const handlers = {
 
 console.log("🚀 Starting app for room:", roomName);
 
-// Initialize network with handler proxies
 const { swarm, topic, sendMessage, getPeerCount } = await initSwarm(
   roomName,
   (msg) => handlers.message?.(msg),
@@ -28,7 +27,8 @@ const { unmount, waitUntilExit } = render(
     sendMessage={sendMessage}
     roomName={roomName}
     handlers={handlers}
-  />,
+  />
+
 );
 
 const cleanup = () => {
